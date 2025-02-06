@@ -2,7 +2,7 @@ from .matchers import Matcher, Mismatch, _match
 import json
 
 
-class FromJson(Matcher):
+class IsJson(Matcher):
     def __init__(self, expected=None):
         self.expected = expected
 
