@@ -53,7 +53,7 @@ class LikeDict:
         return repr(self.val)
 
 
-def test_istype():
+def test_istype(): 
     assert 2 != IsType(str)
     assert 2 == IsType(int, str)
     assert "b" == IsType(int, str)
