@@ -5,7 +5,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pyma"
 version = "0.1.0"
-
+dependencies = [
+  "pytest"
+]
 
 [project.entry-points.pytest11]
 myproject = "pyma.pytplug"
