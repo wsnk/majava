@@ -18,15 +18,15 @@ class Mismatch(Exception):
 
 
 class Matcher:
-    _msg = None
+    _mismatch = None
 
     def __eq__(self, other):
         try:
             self._match(other)
-            self._msg = None
+            self._mismatch = None
             return True
         except Mismatch as e:
-            self._msg = str(e)
+            self._mismatch = e
             return False
 
     def __and__(self, other):
@@ -80,21 +80,3 @@ class Or(Matcher):
             except Mismatch as e:
                 mismatches.append(e)
         raise Mismatch(other, "", ", ".join(str(i) for i in mismatches))
-
-
-class Dict(Matcher):
-    def __init__(self, expected):
-        self.expected = expected
-
-    def __repr__(self):
-        return f"Dict({repr(self.expected)})"
-
-    def _match(self, other):
-        for k, val in self.expected.items():
-            if k not in other:
-                raise Mismatch(other, k, f"key '{k}' not found")
-            actual_val = other[k]
-            try:
-                _match(val, actual_val)
-            except Mismatch as e:
-                raise e.prepend(k)

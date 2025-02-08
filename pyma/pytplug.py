@@ -10,5 +10,5 @@ def pytest_assertrepr_compare(config: pytest.Config, op, left, right):
 
     return [
         f"{left} {op} {right}",
-        f"   {matcher._msg}",
+        f"{matcher._mismatch}",
     ]
