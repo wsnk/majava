@@ -8,6 +8,7 @@ version = "0.1.0"
 dependencies = [
   "pytest"
 ]
+optional-dependencies.tests =  ["flake8"]
 
 [project.entry-points.pytest11]
 myproject = "pyma.pytplug"
