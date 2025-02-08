@@ -1,5 +1,3 @@
-import pytest
-
 class InInterval:
     # The matcher matches, if a given value (other) lies in the interval
 
@@ -43,7 +41,7 @@ def test_ininterval():
     assert 10 not in InInterval(1, 7)
 
 
-def test_istype(): 
+def test_istype():
     assert 2 != IsType(str)
     assert 2 == IsType(int, str)
     assert "b" == IsType(int, str)

@@ -2,10 +2,6 @@ from .matchers import Matcher, Mismatch
 import os
 
 
-
-
-
-
 class _IsDirectory(Matcher):
     def __init__(self, is_empty=None):
         self._is_empty = is_empty

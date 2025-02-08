@@ -1,10 +1,4 @@
 from typing import Optional
-from typing import NamedTuple
-import os
-import json
-
-
-# class Mismatch(NamedTuple):
 
 
 class Mismatch(Exception):
@@ -23,11 +17,9 @@ class Mismatch(Exception):
         return f"Value {repr(self.value)} at {repr(self.path)} does not match - {self.msg}"
 
 
-
-
 class Matcher:
     _msg = None
-    
+
     def __eq__(self, other):
         try:
             self._match(other)
@@ -106,5 +98,3 @@ class Dict(Matcher):
                 _match(val, actual_val)
             except Mismatch as e:
                 raise e.prepend(k)
-
-
