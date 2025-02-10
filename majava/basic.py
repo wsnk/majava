@@ -1,4 +1,4 @@
-from pyma.matchers import Matcher, Mismatch, _match
+from majava.matchers import Matcher, Mismatch, _match
 
 
 class DictContains(Matcher):

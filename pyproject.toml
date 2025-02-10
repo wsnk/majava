@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pytma"
+name = "majava"
 version = "0.1.0"
 dependencies = [
   "pytest"
@@ -11,4 +11,4 @@ dependencies = [
 optional-dependencies.tests =  ["flake8"]
 
 [project.entry-points.pytest11]
-myproject = "pytma.pytplug"
+myproject = "majava.pytplug"
