@@ -1,5 +1,5 @@
 import pytest
-from pyma.basic import InInterval, IsType, DictContains
+from majava.basic import InInterval, IsType, DictContains
 
 
 def test_ininterval():
