@@ -4,11 +4,18 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "majava"
+description = "Collection of matchers for testing"
+keywords = ["testing", "test", "pytest", "matcher"]
+readme = "README.md"
+license.text = "MIT"
+authors = [{name = "wsnk"}]
+
 version = "0.1.0"
-dependencies = [
-  "pytest"
-]
-optional-dependencies.tests =  ["flake8"]
+dependencies = ["pytest"]
+optional-dependencies.tests = ["flake8"]
+
+[project.urls]
+Homepage = "https://github.com/wsnk/majava"
 
 [project.entry-points.pytest11]
 myproject = "majava.pytplug"
