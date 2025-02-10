@@ -7,12 +7,12 @@ name = "majava"
 description = "Collection of matchers for testing"
 keywords = ["testing", "test", "pytest", "matcher"]
 readme = "README.md"
-license = "MIT"
+license.text = "MIT"
 authors = [{name = "wsnk"}]
 
 version = "0.1.0"
 dependencies = ["pytest"]
-optional-dependencies.tests =  ["flake8"]
+optional-dependencies.tests = ["flake8"]
 
 [project.urls]
 Homepage = "https://github.com/wsnk/majava"
