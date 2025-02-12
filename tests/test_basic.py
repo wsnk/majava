@@ -1,5 +1,5 @@
 import pytest
-from majava.basic import InInterval, IsType, DictContains
+from majava.basic import InInterval, IsType, DictContains, AnyOf
 
 
 def test_ininterval():
@@ -20,6 +20,12 @@ def test_dict__plain_match():
     assert {"a": 1, "b": 2} == DictContains({"a": 1})
     assert {"a": 1, "b": 2} == DictContains({"b": 2})
     assert {"a": 1, "b": 2} == DictContains({})
+
+
+def test_anyof():
+    assert [8, "a", 3.5] == AnyOf(8)
+    assert [8, "a", 3.5] == AnyOf("a")
+    assert [8, "a", 3.5] != AnyOf(4)
 
 
 @pytest.mark.parametrize("actual, expected, message", [

@@ -47,3 +47,16 @@ class IsType:
 
     def __repr__(self):
         return ', '.join(it.__name__ for it in self.types)
+
+
+class AnyOf:
+    """Actual value must match at least one of the expected values."""
+
+    def __init__(self, value):
+        self.value = value
+
+    def __eq__(self, other):
+        return self.value in other
+
+    def __repr__(self):
+        return repr(self.value)
