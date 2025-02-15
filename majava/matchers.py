@@ -14,7 +14,7 @@ class Mismatch(Exception):
     def __str__(self):
         if not self.path:
             return f"{repr(self.value)} - {self.msg}"
-        return f"Value {repr(self.value)} at {repr(self.path)} does not match - {self.msg}"
+        return f"Value {repr(self.value)} at {repr(self.path)} does not match: {self.msg}"
 
 
 class Matcher:
@@ -42,8 +42,30 @@ class Matcher:
 def _match(matcher, value):
     if isinstance(matcher, Matcher):
         return matcher._match(value)
+
+    if isinstance(matcher, dict):
+        if not isinstance(value, dict):
+            raise Mismatch(value, "", f"invalid type - got '{type(value)}', expected 'dict'")
+        if len(matcher) != len(value):
+            raise Mismatch(value, "", f"invalid size - got {len(value)}, expected {len(matcher)}")
+        
+        for k, matcher_v in matcher.items():
+            try:
+                actual_v = value[k]
+            except KeyError:
+                raise Mismatch(value, "", f"expected '{k}' element is missing")
+            try:
+                _match(matcher_v, actual_v)
+            except Mismatch as e:
+                raise e.prepend(k)
+
     if matcher != value:
         raise Mismatch(value, "", f"{repr(value)} != {repr(matcher)}")
+
+
+
+
+
 
 
 class And(Matcher):
@@ -80,3 +102,13 @@ class Or(Matcher):
             except Mismatch as e:
                 mismatches.append(e)
         raise Mismatch(other, "", ", ".join(str(i) for i in mismatches))
+
+
+class _Any(Matcher):
+    def __eq__(self, other):
+        return True
+    def __repr__(self):
+        return "<Any>"
+
+
+Any = _Any()
