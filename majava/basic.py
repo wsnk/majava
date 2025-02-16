@@ -1,4 +1,4 @@
-from majava.matchers import Matcher, Mismatch, _match
+from majava.matchers import Matcher, Mismatch, _match_dict
 
 
 class DictContains(Matcher):
@@ -13,37 +13,31 @@ class DictContains(Matcher):
         return f"DictContains({repr(self.expected)})"
 
     def _match(self, other):
-        for k, val in self.expected.items():
-            if k not in other:
-                raise Mismatch(other, k, f"key '{k}' not found")
-            actual_val = other[k]
-            try:
-                if self.recursive and isinstance(val, dict):
-                    val = DictContains(val)
-                _match(val, actual_val)
-            except Mismatch as e:
-                raise e.prepend(k)
+        _match_dict(self.expected, other, allow_unexpected=True)
 
 
-class InInterval:
-    # The matcher matches, if a given value (other) lies in the interval
-
-    def __init__(self, *value):
-        self.first_value, self.second_value = value
-
-    def __eq__(self, other):
-        return self.first_value <= other <= self.second_value
+class InInterval(Matcher):
+    def __init__(self, low, high):
+        self.low, self.high = low, high
 
     def __repr__(self):
-        return f"{self.first_value}, {self.second_value}"
+        return f"InInterval({self.low}, {self.high})"
+
+    def _match(self, other):
+        if not (self.low <= other <= self.high):
+            raise Mismatch(other, "", f"not {self}")
 
 
-class IsType:
+class IsInstance(Matcher):
     def __init__(self, *types):
         self.types = types
 
-    def __eq__(self, other):
-        return isinstance(other, self.types)
+    def _types_str(self):
+        return "|".join(i.__name__ for i in self.types)
 
     def __repr__(self):
-        return ', '.join(it.__name__ for it in self.types)
+        return f"IsInstance({self._types_str()})"
+
+    def _match(self, other):
+        if not isinstance(other, self.types):
+            raise Mismatch(other, "", f"not {self}")

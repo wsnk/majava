@@ -2,6 +2,18 @@ from typing import Optional
 
 
 class Mismatch(Exception):
+    @classmethod
+    def invalid_type(cls, value, expected_type, path=""):
+        return cls(value, path, f"invalid type - got {type(value)}, expected {expected_type}")
+
+    @classmethod
+    def invalid_len(cls, value, expected_len, path=""):
+        return cls(value, path, f"invalid length - got {len(value)}, expected {expected_len}")
+
+    @classmethod
+    def key_missing(cls, value, key, path=""):
+        return cls(value, path, f"key '{key}' not found")
+
     def __init__(self, value, path, msg):
         self.value = value
         self.path = path
@@ -13,7 +25,7 @@ class Mismatch(Exception):
 
     def __str__(self):
         if not self.path:
-            return f"{repr(self.value)} - {self.msg}"
+            return f"Value {repr(self.value)} does not match: {self.msg}"
         return f"Value {repr(self.value)} at {repr(self.path)} does not match: {self.msg}"
 
 
@@ -39,33 +51,47 @@ class Matcher:
         pass
 
 
+class _MatcherWrap(Matcher):
+    def __init__(self, v):
+        self.v = v
+
+    def __repr__(self):
+        return repr(self.v)
+
+    def _match(self, other):
+        _match(self.v, other)
+
+
+def matcher(value) -> Matcher:
+    """
+    Makes a matcher from the given value.
+    It allows to get similar message on AssertionError in pytest.
+    """
+
+    return _MatcherWrap(value)
+
+
+def _check_type(value, types):
+    if not isinstance(value, types):
+        raise Mismatch.invalid_type(value, types)
+
+
+def _check_len(value, expected):
+    v_len = len(value)
+    if v_len != expected:
+        raise Mismatch(value, "", f"invalid length - got {v_len}, expected {expected}")
+
+
 def _match(matcher, value):
     if isinstance(matcher, Matcher):
         return matcher._match(value)
 
     if isinstance(matcher, dict):
-        if not isinstance(value, dict):
-            raise Mismatch(value, "", f"invalid type - got '{type(value)}', expected 'dict'")
-        if len(matcher) != len(value):
-            raise Mismatch(value, "", f"invalid size - got {len(value)}, expected {len(matcher)}")
-        
-        for k, matcher_v in matcher.items():
-            try:
-                actual_v = value[k]
-            except KeyError:
-                raise Mismatch(value, "", f"expected '{k}' element is missing")
-            try:
-                _match(matcher_v, actual_v)
-            except Mismatch as e:
-                raise e.prepend(k)
+        _check_type(value, dict)
+        return _match_dict(matcher, value)
 
     if matcher != value:
         raise Mismatch(value, "", f"{repr(value)} != {repr(matcher)}")
-
-
-
-
-
 
 
 class And(Matcher):
@@ -101,14 +127,80 @@ class Or(Matcher):
                 return
             except Mismatch as e:
                 mismatches.append(e)
-        raise Mismatch(other, "", ", ".join(str(i) for i in mismatches))
+
+        or_str = " nor ".join(repr(i) for i in self.matchers)
+        raise Mismatch(other, "", f"is not {or_str}")
 
 
 class _Any(Matcher):
     def __eq__(self, other):
         return True
+
     def __repr__(self):
         return "<Any>"
 
 
 Any = _Any()
+
+
+class _Absent:
+    def __eq__(self, other):
+        return self is other
+        # if self is not other:
+        #     raise Mismatch("asd", "", "item is missing")
+
+    def __repr__(self):
+        return "<Absent>"
+
+
+Absent = _Absent()
+
+
+class MayBe(Matcher):
+    def __init__(self, v):
+        self.v = v
+
+    def __repr__(self):
+        return f"MayBe({repr(self.v)})"
+
+    def _match(self, other):
+        if self is Absent:
+            return
+        _match(self.v, other)
+
+
+def _is_missing(val):
+    return not isinstance(val, (MayBe, _Absent))
+
+
+def _match_dict(matcher: dict, value: dict, allow_unexpected=False):
+    missing_keys = set(matcher.keys())
+    unexpected_keys = []
+
+    for key, value_v in value.items():
+        try:
+            matcher_v = matcher[key]
+        except KeyError:
+            if not allow_unexpected:
+                unexpected_keys.append(key)
+            continue
+
+        if matcher_v is Absent:
+            unexpected_keys.append(key)
+            continue
+
+        try:
+            _match(matcher_v, value_v)
+        except Mismatch as e:
+            raise e.prepend(key)
+
+        missing_keys.remove(key)
+
+    missing_keys = sorted(filter(lambda k: _is_missing(matcher[k]), missing_keys))
+    if missing_keys:
+        missing_keys_str = ", ".join(repr(i) for i in sorted(missing_keys))
+        raise Mismatch(value, "", f"missing items with keys: {missing_keys_str}")
+
+    if unexpected_keys:
+        unexpected_keys_str = ", ".join(repr(i) for i in unexpected_keys)
+        raise Mismatch(value, "", f"unexpected items with keys: {unexpected_keys_str}")
