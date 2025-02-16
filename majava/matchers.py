@@ -11,8 +11,14 @@ class Mismatch(Exception):
         return cls(value, path, f"invalid length - got {len(value)}, expected {expected_len}")
 
     @classmethod
-    def key_missing(cls, value, key, path=""):
-        return cls(value, path, f"key '{key}' not found")
+    def missing_keys(cls, value, keys, path=""):
+        keys_str = ", ".join(repr(i) for i in keys)
+        return cls(value, path, f"missing items with keys: {keys_str}")
+
+    @classmethod
+    def missing_items(cls, value, items, path=""):
+        items_str = ", ".join(repr(i) for i in items)
+        raise Mismatch(value, "", f"missing items: {items_str}")
 
     def __init__(self, value, path, msg):
         self.value = value
@@ -95,13 +101,16 @@ def _match(matcher, value):
 
 
 class And(Matcher):
-    def __init__(self, *matchers):
+    def __init__(self, *matchers, repr=None):
         self.matchers = matchers
+        self._repr = repr
 
     def __and__(self, other):
         return And(*self.matchers, other)
 
     def __repr__(self):
+        if self._repr is not None:
+            return self._repr
         return '&'.join(repr(it) for it in self.matchers)
 
     def _match(self, other):
@@ -157,6 +166,9 @@ Absent = _Absent()
 
 
 class MayBe(Matcher):
+    """ To be used in dicts; such items may not exist or must match
+    """
+
     def __init__(self, v):
         self.v = v
 
@@ -167,6 +179,18 @@ class MayBe(Matcher):
         if self is Absent:
             return
         _match(self.v, other)
+
+
+class Lambda(Matcher):
+    def __init__(self, callback):
+        self.cb = callable
+
+    def __repr__(self):
+        return f"Lambda({self.cb})"
+
+    def _match(self, other):
+        if not self.cb(other):
+            raise Mismatch(other, "", "callback returned False")
 
 
 def _is_missing(val):
@@ -198,8 +222,7 @@ def _match_dict(matcher: dict, value: dict, allow_unexpected=False):
 
     missing_keys = sorted(filter(lambda k: _is_missing(matcher[k]), missing_keys))
     if missing_keys:
-        missing_keys_str = ", ".join(repr(i) for i in sorted(missing_keys))
-        raise Mismatch(value, "", f"missing items with keys: {missing_keys_str}")
+        raise Mismatch.missing_keys(value, sorted(missing_keys))
 
     if unexpected_keys:
         unexpected_keys_str = ", ".join(repr(i) for i in unexpected_keys)
