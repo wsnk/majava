@@ -10,7 +10,7 @@ readme = "README.md"
 license.text = "MIT"
 authors = [{name = "wsnk"}]
 
-version = "0.2.0"
+version = "0.3.0"
 dependencies = ["pytest"]
 optional-dependencies.tests = ["flake8"]
 

@@ -1,8 +1,8 @@
-from majava.matchers import Matcher, Mismatch, _match_dict
+from majava.matchers import Matcher, Mismatch, _match_dict, make_matcher, _match, Absent
 
 
 class DictContains(Matcher):
-    """ Matches, if a dict contains expected subset of key-value pairs
+    """ If value contains expected key-value pairs
     """
 
     def __init__(self, expected, *, recursive=True):
@@ -14,18 +14,6 @@ class DictContains(Matcher):
 
     def _match(self, other):
         _match_dict(self.expected, other, allow_unexpected=True)
-
-
-class InInterval(Matcher):
-    def __init__(self, low, high):
-        self.low, self.high = low, high
-
-    def __repr__(self):
-        return f"InInterval({self.low}, {self.high})"
-
-    def _match(self, other):
-        if not (self.low <= other <= self.high):
-            raise Mismatch(other, "", f"not {self}")
 
 
 class IsInstance(Matcher):
@@ -54,18 +42,6 @@ class Round(Matcher):
     def _match(self, other):
         if self.value != round(other, self.digits):
             raise Mismatch(other, "", f"not ~{self.value}")
-
-
-class Length(Matcher):
-    def __init__(self, v):
-        self.v = v
-
-    def __repr__(self):
-        return f"Length({self.v})"
-
-    def _match(self, other):
-        if len(other) != self.v:
-            raise Mismatch(other, "", f"len is not {self.v}")
 
 
 class ContainsOrdered(Matcher):
@@ -119,3 +95,33 @@ def Contains(items, ordered=False):
     if ordered:
         return ContainsOrdered(items)
     return _Contains(items)
+
+
+@make_matcher
+def StartsWith(value, expected):
+    return value.startswith(expected)
+
+
+@make_matcher
+def EndsWith(value, expected):
+    return value.endswith(expected)
+
+
+@make_matcher
+def LengthIs(value, expected):
+    return len(value) == expected
+
+
+@make_matcher
+def InInterval(value, low, high):
+    return low <= value <= high
+
+
+@make_matcher
+def HasAttrs(value, **kwargs):
+    for key, expected in kwargs.items():
+        try:
+            _match(expected, getattr(value, key, Absent))
+        except Mismatch as e:
+            raise e.prepend(key)
+    return True
