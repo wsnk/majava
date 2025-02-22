@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Type, Callable
 
 
 class Mismatch(Exception):
@@ -36,6 +36,9 @@ class Mismatch(Exception):
 
 
 class Matcher:
+    """ Base class for all matchers.
+    """
+
     _mismatch = None
 
     def __eq__(self, other):
@@ -57,6 +60,31 @@ class Matcher:
         pass
 
 
+def make_matcher(fn: Callable) -> Type[Matcher]:
+    """ Decorates a function to become a matcher.
+    """
+
+    name = fn.__name__
+
+    class M(Matcher):
+        def __init__(self, *args):
+            self.args = args
+
+        def __repr__(self):
+            args_str = ", ".join(repr(i) for i in self.args)
+            return f"{name}({args_str})"
+
+        def _match(self, other):
+            if fn(self.args, other) is False:
+                raise Mismatch(other, "", f"not {self}")
+
+    M.__qualname__ = name
+    M.__name__ = name
+    M.__doc__ = fn.__doc__
+
+    return M
+
+
 class _MatcherWrap(Matcher):
     def __init__(self, v):
         self.v = v
@@ -69,8 +97,7 @@ class _MatcherWrap(Matcher):
 
 
 def matcher(value) -> Matcher:
-    """
-    Makes a matcher from the given value.
+    """ Makes a matcher from the given value.
     It allows to get similar message on AssertionError in pytest.
     """
 
@@ -142,31 +169,27 @@ class Or(Matcher):
 
 
 class _Any(Matcher):
-    def __eq__(self, other):
-        return True
-
     def __repr__(self):
         return "<Any>"
 
-
-Any = _Any()
+    def __eq__(self, other):
+        return True
 
 
 class _Absent:
-    def __eq__(self, other):
-        return self is other
-        # if self is not other:
-        #     raise Mismatch("asd", "", "item is missing")
-
     def __repr__(self):
         return "<Absent>"
 
+    def __eq__(self, other):
+        return self is other
 
+
+Any = _Any()
 Absent = _Absent()
 
 
 class MayBe(Matcher):
-    """ To be used in dicts; such items may not exist or must match
+    """ To be used in containers. Item may not exist or must match.
     """
 
     def __init__(self, v):
@@ -179,18 +202,6 @@ class MayBe(Matcher):
         if self is Absent:
             return
         _match(self.v, other)
-
-
-class Lambda(Matcher):
-    def __init__(self, callback):
-        self.cb = callable
-
-    def __repr__(self):
-        return f"Lambda({self.cb})"
-
-    def _match(self, other):
-        if not self.cb(other):
-            raise Mismatch(other, "", "callback returned False")
 
 
 def _is_missing(val):
@@ -222,7 +233,7 @@ def _match_dict(matcher: dict, value: dict, allow_unexpected=False):
 
     missing_keys = sorted(filter(lambda k: _is_missing(matcher[k]), missing_keys))
     if missing_keys:
-        raise Mismatch.missing_keys(value, sorted(missing_keys))
+        raise Mismatch.missing_keys(value, missing_keys)
 
     if unexpected_keys:
         unexpected_keys_str = ", ".join(repr(i) for i in unexpected_keys)

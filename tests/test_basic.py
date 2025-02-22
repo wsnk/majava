@@ -1,5 +1,6 @@
 import pytest
 from majava import InInterval, IsInstance, DictContains, Absent, Round, Contains, Unordered
+from majava.basic import StartsWith
 from .common import raises_assertion_error
 
 
@@ -122,3 +123,15 @@ def test_unordered__list():
         assert [1, 2, 3, 4] == m
     with raises_assertion_error("Value [1, 2, 4] does not match: missing items: 3"):
         assert [1, 2, 4] == m
+
+
+def test_starts_with():
+    m = StartsWith("no")
+
+    assert repr(m) == "StartsWith('no')"
+
+    assert "no money" == m
+    assert "no niin" == m
+
+    with raises_assertion_error("Value 'Honey' does not match: not StartsWith('no')"):
+        assert "Honey" == m
