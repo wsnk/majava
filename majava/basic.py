@@ -1,4 +1,4 @@
-from majava.matchers import Matcher, Mismatch, _match_dict, make_matcher
+from majava.matchers import Matcher, Mismatch, _match_dict, make_matcher, _match, Absent
 
 
 class DictContains(Matcher):
@@ -98,16 +98,30 @@ def Contains(items, ordered=False):
 
 
 @make_matcher
-def StartsWith(expected, value):
+def StartsWith(value, expected):
     return value.startswith(expected)
 
 
 @make_matcher
-def LengthIs(expected, value):
+def EndsWith(value, expected):
+    return value.endswith(expected)
+
+
+@make_matcher
+def LengthIs(value, expected):
     return len(value) == expected
 
 
 @make_matcher
-def InInterval(expected, value):
-    low, high = expected
+def InInterval(value, low, high):
     return low <= value <= high
+
+
+@make_matcher
+def HasAttrs(value, **kwargs):
+    for key, expected in kwargs.items():
+        try:
+            _match(expected, getattr(value, key, Absent))
+        except Mismatch as e:
+            raise e.prepend(key)
+    return True
